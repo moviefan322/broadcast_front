@@ -1,27 +1,57 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { io, type Socket } from 'socket.io-client';
+	import * as mediasoupClient from 'mediasoup-client';
 
 	let socket: Socket | null = null;
+	let device: mediasoupClient.Device | null = null;
 	let connected = $state(false);
+
+	let userName = $state('philip');
+	let roomName = $state('demo-room');
+	let roomStatus = $state('Not joined');
 
 	let broadcastStatus = $state('Not Broadcasting');
 	let isBroadcasting = $state(false);
 	let isConsuming = $state(false);
 
 	const connectSocket = async () => {
-		//   console.log("connect button clicked");
+		if (socket) {
+			console.log('socket already exists:', socket.id);
+			return;
+		}
+
 		socket = io('http://localhost:3000');
-		//   keep the socket listeners in their own place
+
 		socket.on('connect', () => {
 			connected = true;
 			console.log('connected:', socket?.id);
+		});
+
+		socket.on('disconnect', () => {
+			connected = false;
+			console.log('disconnected');
 		});
 	};
 
 	// const setupDevice = async () => {
 	// 	status = 'Setting up device...';
 	// };
+
+	const joinRoom = async () => {
+		if (!socket) {
+			console.error('Socket not initialized');
+			return;
+		}
+		const joinRoomResp = await socket.emitWithAck('joinRoom', {
+			userName,
+			roomName
+		});
+		console.log('joinRoomResp', joinRoomResp);
+		// device = new mediasoupClient.Device();
+		// const routerRtpCapabilities = await socket?.emitWithAck('getRtpCap');
+		// console.log('routerRtpCapabilities', routerRtpCapabilities);
+	};
 
 	const startBroadcasting = async () => {
 		isBroadcasting = true;
@@ -56,10 +86,31 @@
 
 	onMount(() => {
 		connectSocket();
+
+		return () => {
+			console.log('disconnecting socket:', socket?.id);
+			socket?.disconnect();
+			socket = null;
+		};
 	});
 </script>
 
 <main class="page">
+	<div class="form-grid">
+		<label>
+			<span>User name</span>
+			<input bind:value={userName} placeholder="philip" />
+		</label>
+
+		<label>
+			<span>Room name</span>
+			<input bind:value={roomName} placeholder="demo-room" />
+		</label>
+
+		<button class="secondary-button" onclick={joinRoom} disabled={!connected}> Join Room </button>
+	</div>
+
+	<p class="status">{roomStatus}</p>
 	<section class="card">
 		<h1>Audio Broadcast Demo</h1>
 
@@ -185,5 +236,34 @@
 
 	audio {
 		width: 100%;
+	}
+
+	.form-grid {
+		display: grid;
+		gap: 14px;
+		margin-bottom: 20px;
+	}
+
+	label {
+		display: grid;
+		gap: 6px;
+		color: #c8bac5;
+		font-size: 14px;
+	}
+
+	input {
+		width: 100%;
+		border: 1px solid #6f5b69;
+		border-radius: 12px;
+		background: #191219;
+		color: #f3eaf1;
+		padding: 12px 14px;
+		font: inherit;
+		box-sizing: border-box;
+	}
+
+	input:focus {
+		outline: 2px solid #ff4fdb;
+		border-color: #ff4fdb;
 	}
 </style>
