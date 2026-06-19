@@ -1,0 +1,74 @@
+{
+	"window.title": "AUDIO DEMO — ${activeEditorShort}${separator}${rootName}",
+
+	"workbench.colorCustomizations": {
+		"titleBar.activeBackground": "#7A0F5D",
+		"titleBar.activeForeground": "#F8E9F5",
+		"titleBar.inactiveBackground": "#3A2234",
+		"titleBar.inactiveForeground": "#BDA9B9",
+
+		"activityBar.background": "#1A1219",
+		"activityBar.foreground": "#FF4FDB",
+		"activityBar.inactiveForeground": "#8E7C8B",
+		"activityBarBadge.background": "#D6C8D3",
+		"activityBarBadge.foreground": "#1A1219",
+
+		"sideBar.background": "#171117",
+		"sideBar.foreground": "#D8CCD6",
+		"sideBar.border": "#5E4057",
+		"sideBarTitle.foreground": "#FF7BE6",
+		"sideBarSectionHeader.background": "#241722",
+		"sideBarSectionHeader.foreground": "#E8DDE6",
+
+		"editor.background": "#100D10",
+		"editor.foreground": "#E6DDE4",
+		"editorLineNumber.foreground": "#6F5B69",
+		"editorLineNumber.activeForeground": "#FF4FDB",
+		"editorCursor.foreground": "#FF8BEA",
+		"editor.selectionBackground": "#8A1B6B88",
+		"editor.inactiveSelectionBackground": "#4A2A4188",
+		"editor.lineHighlightBackground": "#211720",
+		"editorIndentGuide.background1": "#33202F",
+		"editorIndentGuide.activeBackground1": "#C8BAC5",
+
+		"editorGroupHeader.tabsBackground": "#130F13",
+		"tab.activeBackground": "#291A27",
+		"tab.activeForeground": "#FFFFFF",
+		"tab.inactiveBackground": "#181218",
+		"tab.inactiveForeground": "#9B8A97",
+		"tab.activeBorderTop": "#FF4FDB",
+		"tab.hoverBackground": "#3A2234",
+
+		"statusBar.background": "#7A0F5D",
+		"statusBar.foreground": "#FCECF8",
+		"statusBar.noFolderBackground": "#4A2A41",
+		"statusBar.debuggingBackground": "#D42CB2",
+		"statusBarItem.hoverBackground": "#A51681",
+
+		"panel.background": "#130F13",
+		"panel.border": "#5E4057",
+		"panelTitle.activeForeground": "#FF7BE6",
+		"panelTitle.inactiveForeground": "#A897A4",
+		"terminal.background": "#100D10",
+		"terminal.foreground": "#E6DDE4",
+		"terminalCursor.foreground": "#FF4FDB",
+
+		"breadcrumb.background": "#100D10",
+		"breadcrumb.foreground": "#A897A4",
+		"breadcrumb.focusForeground": "#FF7BE6",
+
+		"list.activeSelectionBackground": "#7A0F5D",
+		"list.activeSelectionForeground": "#FFFFFF",
+		"list.inactiveSelectionBackground": "#33202F",
+		"list.hoverBackground": "#291A27",
+
+		"button.background": "#B5168E",
+		"button.foreground": "#FFFFFF",
+		"button.hoverBackground": "#D42CB2",
+
+		"input.background": "#191219",
+		"input.foreground": "#F3EAF1",
+		"input.border": "#6F5B69",
+		"focusBorder": "#FF4FDB"
+	}
+}
