@@ -1,10 +1,20 @@
 <script lang="ts">
+	import type { Transport, Producer } from 'mediasoup-client/types';
 	import { onMount } from 'svelte';
 	import { io, type Socket } from 'socket.io-client';
-	import * as mediasoupClient from 'mediasoup-client';
+	import { Device } from 'mediasoup-client';
+
+	import { requestTransportToConsume } from '$lib/mediaSoupUtils/requestTransportToConsume.js';
+	import { createProducerTransport } from '$lib/mediaSoupUtils/createProducerTransport.js';
+	import { createProducer } from '$lib/mediaSoupUtils/createProducer.js';
 
 	let socket: Socket | null = null;
-	let device: mediasoupClient.Device | null = null;
+	let device: Device | null = null;
+	let localStream: MediaStream | null = null;
+	let producerTransport: Transport | null = null;
+	let audioProducer: Producer | null = null;
+	let remoteAudioEl: HTMLAudioElement;
+
 	let connected = $state(false);
 
 	let userName = $state('philip');
@@ -14,6 +24,7 @@
 	let broadcastStatus = $state('Not Broadcasting');
 	let isBroadcasting = $state(false);
 	let isConsuming = $state(false);
+	let isBroadcasterMuted = $state(false);
 
 	const connectSocket = async () => {
 		if (socket) {
@@ -48,41 +59,126 @@
 			roomName
 		});
 		console.log('joinRoomResp', joinRoomResp);
-		// device = new mediasoupClient.Device();
-		// const routerRtpCapabilities = await socket?.emitWithAck('getRtpCap');
-		// console.log('routerRtpCapabilities', routerRtpCapabilities);
+		device = new Device();
+		await device.load({
+			routerRtpCapabilities: joinRoomResp.routerRtpCapabilities
+		});
+		console.log('device loaded with capabilities:', device);
+
+		if (joinRoomResp.producerAvailable && !isBroadcasting) {
+			console.log('producer is available, setting up consumer transport');
+			const remoteStream = await requestTransportToConsume(socket, device);
+
+			if (!remoteStream) {
+				console.error('Failed to get remote stream');
+				return;
+			}
+			remoteAudioEl.srcObject = remoteStream;
+			console.log(
+				'remote stream tracks:',
+				remoteStream.getTracks().map((track) => ({
+					id: track.id,
+					kind: track.kind,
+					enabled: track.enabled,
+					muted: track.muted,
+					readyState: track.readyState
+				}))
+			);
+
+			console.log('remoteAudioEl after srcObject:', {
+				srcObject: remoteAudioEl.srcObject,
+				paused: remoteAudioEl.paused,
+				muted: remoteAudioEl.muted,
+				volume: remoteAudioEl.volume,
+				autoplay: remoteAudioEl.autoplay
+			});
+
+			try {
+				await remoteAudioEl.play();
+
+				console.log('remoteAudioEl.play() succeeded');
+
+				roomStatus = 'Playing remote audio';
+			} catch (err) {
+				console.log('remoteAudioEl.play() failed:', err);
+
+				roomStatus = 'Audio received — click play if browser blocked autoplay';
+			}
+			isConsuming = true;
+		}
+
+		// TODO: GET CONSUMERS LINKED UP
+	};
+
+	const enableFeed = async () => {
+		localStream = await navigator.mediaDevices.getUserMedia({
+			audio: true,
+			video: false
+		});
+
+		console.log('audio track:', localStream.getAudioTracks()[0]);
+	};
+
+	const sendFeed = async () => {
+		// create transport for THIS client's upstream
+		if (!socket || !device) {
+			console.error('Socket or device not initialized');
+			return;
+		}
+		if (!localStream) {
+			console.error('Local stream not initialized');
+			return;
+		}
+		producerTransport = await createProducerTransport(socket, device);
+		console.log('producer transport created:', producerTransport);
+		const producer = await createProducer(localStream, producerTransport);
+		if (!producer) {
+			console.error('Producer not created');
+			return;
+		}
+		audioProducer = producer;
+		console.log('audio producer created:', audioProducer);
 	};
 
 	const startBroadcasting = async () => {
 		isBroadcasting = true;
 		broadcastStatus = 'Broadcasting...';
+		await enableFeed();
+		console.log('starting broadcast with stream:', localStream);
+		await sendFeed();
 	};
-
-	// const startConsuming = async () => {
-	// 	isConsuming = true;
-	// 	status = 'Consuming broadcast...';
-	// };
 
 	const stopBroadcasting = async () => {
 		isBroadcasting = false;
 		broadcastStatus = 'Broadcast stopped';
 	};
 
-	let remoteAudioEl: HTMLAudioElement;
+	const toggleBroadcastMute = () => {
+		if (!audioProducer) {
+			console.error('No audio producer to mute/unmute');
+			return;
+		}
 
-	// const attachRemoteTrack = async (track: MediaStreamTrack) => {
-	// 	const stream = new MediaStream([track]);
+		if (isBroadcasterMuted) {
+			audioProducer.resume();
+			isBroadcasterMuted = false;
+			broadcastStatus = 'Broadcasting...';
 
-	// 	remoteAudioEl.srcObject = stream;
+			console.log('producer resumed:', {
+				paused: audioProducer.paused,
+				trackEnabled: audioProducer.track?.enabled
+			});
+		} else {
+			audioProducer.pause();
+			isBroadcasterMuted = true;
+			broadcastStatus = 'Broadcasting muted';
 
-	// 	try {
-	// 		await remoteAudioEl.play();
-	// 		status = 'Playing remote audio';
-	// 	} catch (err) {
-	// 		console.log('audio play blocked:', err);
-	// 		status = 'Audio received — click play if browser blocked autoplay';
-	// 	}
-	// };
+			console.log('producer paused:', {
+				paused: audioProducer.paused,
+				trackEnabled: audioProducer.track?.enabled
+			});
+		}
+	};
 
 	onMount(() => {
 		connectSocket();
@@ -120,6 +216,14 @@
 		<div class="controls">
 			<button class="broadcast-button" onclick={startBroadcasting} disabled={isBroadcasting}>
 				{isBroadcasting ? 'Broadcasting' : 'Start Broadcast'}
+			</button>
+
+			<button
+				class="secondary-button"
+				onclick={toggleBroadcastMute}
+				// disabled={!isBroadcasting || !audioProducer}
+			>
+				{isBroadcasterMuted ? 'Unmute' : 'Mute'}
 			</button>
 
 			<button class="secondary-button" onclick={stopBroadcasting} disabled={!isBroadcasting}>
