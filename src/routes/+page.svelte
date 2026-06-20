@@ -8,6 +8,8 @@
 	import { createProducerTransport } from '$lib/mediaSoupUtils/createProducerTransport.js';
 	import { createProducer } from '$lib/mediaSoupUtils/createProducer.js';
 
+	import { PUBLIC_SOCKET_URL } from '$env/static/public';
+
 	let socket: Socket | null = null;
 	let device: Device | null = null;
 	let localStream: MediaStream | null = null;
@@ -32,7 +34,7 @@
 			return;
 		}
 
-		socket = io('http://localhost:3000');
+		socket = io(PUBLIC_SOCKET_URL);
 
 		socket.on('connect', () => {
 			connected = true;
