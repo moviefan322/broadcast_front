@@ -258,7 +258,7 @@
 		min-height: 100vh;
 		display: grid;
 		place-items: center;
-		background: #100d10;
+		background: #725380;
 		color: #f3eaf1;
 		font-family:
 			Inter,
